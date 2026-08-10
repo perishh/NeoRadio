@@ -35,7 +35,27 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+    }
+}
+
 dependencies {
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.compose)
+
+    implementation(libs.androidx.compose.material.icons.extended)
+
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose)
+    implementation(libs.koin.compose.viewmodel)
+
+    implementation(libs.okhttp)
+
+    implementation(libs.ksoup)
+    implementation(libs.ksoup.kotlinx)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
