@@ -36,7 +36,7 @@ class PlayerRepository(
         _isBuffering.update { true }
         _station.update { station }
         getStreamJob = coroutineScope.launch {
-            val stream = ERadioService.getStream(station.id)
+            val stream = ERadioService.getStream(station.url)
             if (stream == null) {
                 _isBuffering.update { false }
                 _station.update { null }

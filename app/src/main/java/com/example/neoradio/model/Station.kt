@@ -1,8 +1,8 @@
 package com.example.neoradio.model
 
 data class Station(
-    val id: String,
+    val url: String,
     val thumbnail: String,
     val name: String,
-    val city: String?
+    val city: String?,
 )

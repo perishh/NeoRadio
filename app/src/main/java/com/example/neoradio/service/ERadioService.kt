@@ -17,7 +17,13 @@ object ERadioService {
 
     private fun get(endpoint: String) =
         client.newCall(
-            Request.Builder().url(baseUrl + endpoint)
+            Request.Builder().url(endpoint.let {
+                if (endpoint.startsWith("http")) {
+                    endpoint
+                } else {
+                    baseUrl + endpoint
+                }
+            })
                 .header(
                     "User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
@@ -43,20 +49,39 @@ object ERadioService {
     }
 
     private fun parseStation(li: Element): Station? {
-        val thumbnail = li.selectFirst("img")?.attr("src") ?: return null
-        val id =
-            li.selectFirst("a")?.attr("href")?.split("www.e-radio.gr/")?.getOrNull(1)?.split("/")
-                ?.getOrNull(0) ?: return null
+        val thumbnail =
+            li.selectFirst("img")?.attr("src")?.replaceFirst("/promo/", "/big/") ?: return null
+        val url = li.selectFirst("a")?.attr("href") ?: return null
         val name = li.selectFirst("span.sTitle")?.text() ?: return null
         val city = li.selectFirst("a")?.ownText()
-        return Station(id, thumbnail, name, city)
+        return Station(url, thumbnail, name, city)
     }
 
-    fun getStream(id: String): String? {
-        val res = get("/$id/live")
-        return res.body.string().split("mp3: \"").getOrNull(1)?.split("\"")?.getOrNull(0).also {
-            res.close()
+    suspend fun getStream(url: String): String? {
+        val res = get(url)
+        val body = res.body.string()
+        res.close()
+
+        var regex = "mp3: \"(.*?)\"".toRegex()
+        var match = regex.find(body)
+
+        if (match != null) {
+            val (source) = match.destructured
+            return source
+        } else {
+            regex = "<iframe.*?src=\"(.*?)\".*?>".toRegex()
+            match = regex.find(body)
+
+            if (match != null) {
+                var (source) = match.destructured
+                if (source.startsWith("//")) {
+                    source = "https:$source"
+                }
+                return getStream(source)
+            }
         }
+
+        return null
     }
 
 

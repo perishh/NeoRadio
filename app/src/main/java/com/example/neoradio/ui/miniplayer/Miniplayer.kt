@@ -84,7 +84,7 @@ fun Miniplayer(modifier: Modifier = Modifier, viewModel: MiniplayerViewModel = k
             }
             AnimatedContent(isBuffering) {
                 if (it) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 } else {
                     IconButton(
                         onClick = {

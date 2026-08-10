@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +51,6 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
     val density = LocalDensity.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val featured by viewModel.featured.collectAsStateWithLifecycle()
-    val coroutineScope = rememberCoroutineScope()
 
     var truePeekHeight by remember { mutableIntStateOf(85) }
     val animatedPeekHeight by animateDpAsState(targetValue = with(density) { truePeekHeight.toDp() })
