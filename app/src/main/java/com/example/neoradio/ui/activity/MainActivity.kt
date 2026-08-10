@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.neoradio.ui.screen.home.HomeScreen
+import com.example.neoradio.ui.screen.main.MainScreen
 import com.example.neoradio.ui.theme.NeoRadioTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NeoRadioTheme {
-                HomeScreen()
+                MainScreen()
             }
         }
     }

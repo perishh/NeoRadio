@@ -1,5 +1,6 @@
 package com.example.neoradio.service
 
+import com.example.neoradio.model.HomePage
 import com.example.neoradio.model.Station
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
@@ -8,7 +9,6 @@ import com.fleeksoft.ksoup.parseInputStream
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-typealias RadioList = Pair<String, List<Station>>
 
 object ERadioService {
     private const val baseUrl = "https://www.e-radio.gr"
@@ -85,13 +85,23 @@ object ERadioService {
     }
 
 
-    suspend fun getFeatured(): List<RadioList> =
+    suspend fun getHomePage(): HomePage =
         getHTML("/") { document ->
-            document.select(".panel").mapNotNull { list ->
+            val regions = document.html().let { body ->
+                val regex =
+                    "<a href=\"https:\\/\\/www\\.e-radio\\.gr\\/location\\/(.*?)\">(.*?)<\\/a>".toRegex()
+                regex.findAll(body).map { Pair(it.groupValues[1], it.groupValues[2]) }
+                    .distinctBy { it.first }
+            }
+            val radioLists = document.select(".panel").mapNotNull { list ->
                 val title = list.selectFirst("h2 > a")?.text() ?: return@mapNotNull null
                 val radios =
                     list.select(".homeRadioItem").mapNotNull { li -> parseStation(li) }
                 Pair(title, radios)
             }
+            HomePage(
+                regions = regions.toList(),
+                radioLists = radioLists
+            )
         }
 }
