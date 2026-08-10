@@ -42,7 +42,7 @@ object ERadioService {
         }
     }
 
-    private fun parseStation(title: String, li: Element): Station? {
+    private fun parseStation(li: Element): Station? {
         val thumbnail = li.selectFirst("img")?.attr("src") ?: return null
         val id =
             li.selectFirst("a")?.attr("href")?.split("www.e-radio.gr/")?.getOrNull(1)?.split("/")
@@ -52,12 +52,20 @@ object ERadioService {
         return Station(id, thumbnail, name, city)
     }
 
-    fun getFeatured(): List<RadioList> =
+    fun getStream(id: String): String? {
+        val res = get("/$id/live")
+        return res.body.string().split("mp3: \"").getOrNull(1)?.split("\"")?.getOrNull(0).also {
+            res.close()
+        }
+    }
+
+
+    suspend fun getFeatured(): List<RadioList> =
         getHTML("/") { document ->
             document.select(".panel").mapNotNull { list ->
                 val title = list.selectFirst("h2 > a")?.text() ?: return@mapNotNull null
                 val radios =
-                    list.select(".homeRadioItem").mapNotNull { li -> parseStation(title, li) }
+                    list.select(".homeRadioItem").mapNotNull { li -> parseStation(li) }
                 Pair(title, radios)
             }
         }
