@@ -1,4 +1,4 @@
-package com.example.neoradio.ui.miniplayer
+package com.example.neoradio.ui.screen.main.component
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -49,19 +49,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.neoradio.controller.PlayerController
 import com.example.neoradio.ui.screen.main.LocalBottomSheet
 import kotlinx.coroutines.launch
-import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
 
 @Composable
-fun Miniplayer(modifier: Modifier = Modifier, viewModel: MiniplayerViewModel = koinViewModel()) {
+fun Miniplayer(modifier: Modifier = Modifier) {
+    val controller = koinInject<PlayerController>()
     val sheetState = LocalBottomSheet.current
 
     val coroutineScope = rememberCoroutineScope()
 
-    val station by viewModel.station.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val isBuffering by viewModel.isBuffering.collectAsStateWithLifecycle()
+    val station by controller.station.collectAsStateWithLifecycle()
+    val isPlaying by controller.isPlaying.collectAsStateWithLifecycle()
+    val isBuffering by controller.isBuffering.collectAsStateWithLifecycle()
 
     var isFullyExpanded by rememberSaveable { mutableStateOf(false) }
     var isToBeFullyExpanded by rememberSaveable { mutableStateOf(false) }
@@ -143,9 +145,9 @@ fun Miniplayer(modifier: Modifier = Modifier, viewModel: MiniplayerViewModel = k
                     IconButton(
                         onClick = {
                             if (isPlaying) {
-                                viewModel.pause()
+                                controller.pause()
                             } else {
-                                viewModel.play()
+                                controller.play()
                             }
                         }
                     ) {

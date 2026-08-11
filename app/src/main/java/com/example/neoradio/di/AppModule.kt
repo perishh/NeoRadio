@@ -1,10 +1,9 @@
 package com.example.neoradio.di
 
+import com.example.neoradio.controller.PlayerController
 import com.example.neoradio.repository.HomeRepository
-import com.example.neoradio.repository.PlayerRepository
 import com.example.neoradio.ui.fragment.home.HomeViewModel
 import com.example.neoradio.ui.fragment.regions.RegionsViewModel
-import com.example.neoradio.ui.miniplayer.MiniplayerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,7 +15,7 @@ import org.koin.dsl.onClose
 
 val appModule = module {
     single {
-        PlayerRepository(
+        PlayerController(
             androidContext(),
             CoroutineScope(SupervisorJob() + Dispatchers.IO)
         )
@@ -25,5 +24,4 @@ val appModule = module {
 
     viewModelOf(::HomeViewModel)
     viewModelOf(::RegionsViewModel)
-    viewModelOf(::MiniplayerViewModel)
 }

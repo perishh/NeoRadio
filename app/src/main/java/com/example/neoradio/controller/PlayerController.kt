@@ -1,4 +1,4 @@
-package com.example.neoradio.repository
+package com.example.neoradio.controller
 
 import android.content.Context
 import androidx.media3.common.MediaItem
@@ -15,12 +15,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PlayerRepository(
+class PlayerController(
     context: Context,
     private val coroutineScope: CoroutineScope,
 ) : Player.Listener {
     private val player = ExoPlayer.Builder(context).build().apply {
-        addListener(this@PlayerRepository)
+        addListener(this@PlayerController)
     }
 
     private val _isBuffering = MutableStateFlow(false)
@@ -80,7 +80,7 @@ class PlayerRepository(
 
     fun release() {
         getStreamJob?.cancel()
-        player.removeListener(this@PlayerRepository)
+        player.removeListener(this@PlayerController)
         player.release()
     }
 }

@@ -28,8 +28,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.neoradio.ui.fragment.home.HomeFragment
 import com.example.neoradio.ui.fragment.regions.RegionsFragment
-import com.example.neoradio.ui.miniplayer.Miniplayer
 import com.example.neoradio.ui.screen.main.component.FragmentNavigationBar
+import com.example.neoradio.ui.screen.main.component.Miniplayer
 
 val LocalBottomSheet = staticCompositionLocalOf<SheetState> {
     error("SheetState not provided")

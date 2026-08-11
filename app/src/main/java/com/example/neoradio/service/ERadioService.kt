@@ -57,6 +57,25 @@ object ERadioService {
         return Station(url, thumbnail, name, city)
     }
 
+    suspend fun getLocationStations(location: String): List<Station> =
+        getHTML("/location/$location") { document ->
+            document.select("#content > .stationEntry").mapNotNull { div ->
+                val img = div.selectFirst("img") ?: return@mapNotNull null
+                val thumbnail = img.attr("src")
+                val name = img.attr("alt")
+                val url = div.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+                val city = div.selectFirst(".sMeta_Location")?.ownText()
+
+                Station(
+                    url = url,
+                    thumbnail = thumbnail,
+                    name = name,
+                    city = city
+                )
+            }
+        }
+
+
     suspend fun getStream(url: String): String? {
         val res = get(url)
         val body = res.body.string()
