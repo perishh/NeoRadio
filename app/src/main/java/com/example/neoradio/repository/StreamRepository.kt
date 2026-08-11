@@ -5,7 +5,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class StreamRepository {
+object StreamRepository {
     private val kv = MMKV.defaultMMKV()
 
     suspend fun getStream(url: String): String? = withContext(Dispatchers.IO) {

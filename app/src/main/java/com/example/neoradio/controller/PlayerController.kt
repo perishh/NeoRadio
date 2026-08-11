@@ -25,7 +25,6 @@ import kotlinx.coroutines.withContext
 class PlayerController(
     context: Context,
     private val coroutineScope: CoroutineScope,
-    private val streamRepository: StreamRepository
 ) : Player.Listener {
     private var controller: MediaController? = null
 
@@ -49,15 +48,17 @@ class PlayerController(
     private var getStreamJob: Job? = null
 
     fun play(context: Context, station: Station) {
+        _isBuffering.update { true }
+        _station.update { station }
+
         val serviceIntent = Intent(context, PlaybackService::class.java)
         ContextCompat.startForegroundService(context, serviceIntent)
 
         getStreamJob?.cancel()
-        _isBuffering.update { true }
         controller?.stop()
-        _station.update { station }
+
         getStreamJob = coroutineScope.launch {
-            val stream = streamRepository.getStream(station.url)
+            val stream = StreamRepository.getStream(station.url)
             if (stream == null) {
                 _isBuffering.update { false }
                 _station.update { null }

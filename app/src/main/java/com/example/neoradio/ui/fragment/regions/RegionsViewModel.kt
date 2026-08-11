@@ -5,10 +5,9 @@ import com.example.neoradio.repository.HomeRepository
 import com.example.neoradio.repository.RegionsRepository
 
 class RegionsViewModel(
-    private val homeRepository: HomeRepository,
     private val regionsRepository: RegionsRepository
 ) : ViewModel() {
-    val regions = homeRepository.regions
+    val regions = HomeRepository.regions
 
     fun getStations(region: String) = regionsRepository.getStations(region)
 

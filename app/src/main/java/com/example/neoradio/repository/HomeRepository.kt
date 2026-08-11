@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class HomeRepository {
+object HomeRepository {
     private val kv = MMKV.defaultMMKV()
 
     private val _featured = MutableStateFlow<List<RadioList>>(emptyList())

@@ -6,12 +6,11 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -25,8 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.ContextCompat
@@ -36,8 +33,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.neoradio.ui.fragment.home.HomeFragment
 import com.example.neoradio.ui.fragment.regions.RegionsFragment
+import com.example.neoradio.ui.screen.main.component.BottomSheet
 import com.example.neoradio.ui.screen.main.component.FragmentNavigationBar
-import com.example.neoradio.ui.screen.main.component.Miniplayer
 
 val LocalBottomSheet = staticCompositionLocalOf<SheetState> {
     error("SheetState not provided")
@@ -89,18 +86,9 @@ fun MainScreen() {
                     scaffoldState = scaffoldState,
                     sheetPeekHeight = animatedPeekHeight,
                     sheetDragHandle = null,
+                    sheetContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     sheetContent = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.White)
-                        ) {
-                            Miniplayer(
-                                modifier = Modifier.onSizeChanged { size ->
-                                    truePeekHeight = size.height
-                                }
-                            )
-                        }
+                        BottomSheet { truePeekHeight = it }
                     }
                 ) { innerPadding ->
                     NavHost(

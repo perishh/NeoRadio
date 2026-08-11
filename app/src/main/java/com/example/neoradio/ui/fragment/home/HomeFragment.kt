@@ -33,7 +33,7 @@ fun HomeFragment(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinV
     val context = LocalContext.current
     val controller = koinInject<PlayerController>()
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val featured by viewModel.featured.collectAsStateWithLifecycle()
 
