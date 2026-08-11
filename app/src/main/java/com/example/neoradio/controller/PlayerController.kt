@@ -1,11 +1,18 @@
 package com.example.neoradio.controller
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import com.example.neoradio.model.Station
 import com.example.neoradio.repository.StreamRepository
+import com.example.neoradio.service.PlaybackService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -20,8 +27,17 @@ class PlayerController(
     private val coroutineScope: CoroutineScope,
     private val streamRepository: StreamRepository
 ) : Player.Listener {
-    private val player = ExoPlayer.Builder(context).build().apply {
-        addListener(this@PlayerController)
+    private var controller: MediaController? = null
+
+    init {
+        // TODO: Implement reconnection strategy
+        val sessionToken =
+            SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
+
+        controllerFuture.addListener({
+            controller = controllerFuture.get().apply { addListener(this@PlayerController) }
+        }, ContextCompat.getMainExecutor(context))
     }
 
     private val _isBuffering = MutableStateFlow(false)
@@ -32,10 +48,13 @@ class PlayerController(
 
     private var getStreamJob: Job? = null
 
-    fun play(station: Station) {
+    fun play(context: Context, station: Station) {
+        val serviceIntent = Intent(context, PlaybackService::class.java)
+        ContextCompat.startForegroundService(context, serviceIntent)
+
         getStreamJob?.cancel()
         _isBuffering.update { true }
-        player.stop()
+        controller?.stop()
         _station.update { station }
         getStreamJob = coroutineScope.launch {
             val stream = streamRepository.getStream(station.url)
@@ -44,8 +63,25 @@ class PlayerController(
                 _station.update { null }
             } else {
                 withContext(Dispatchers.Main) {
-                    player.apply {
-                        val mediaItem = MediaItem.fromUri(stream)
+                    controller?.apply {
+                        val mediaItem = MediaItem.Builder()
+                            .setUri(stream)
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle(station.name)
+                                    .setArtist(station.city)
+                                    .setIsPlayable(true)
+                                    .setArtworkUri(station.thumbnail.toUri())
+                                    .build()
+                            )
+                            .setLiveConfiguration(
+                                MediaItem.LiveConfiguration.Builder()
+                                    .setTargetOffsetMs(3000)
+                                    .setMinPlaybackSpeed(0.95f)
+                                    .setMaxPlaybackSpeed(1.05f)
+                                    .build()
+                            )
+                            .build()
                         setMediaItem(mediaItem)
                         prepare()
                         playWhenReady = true
@@ -56,12 +92,12 @@ class PlayerController(
     }
 
     fun play() {
-        player.seekToDefaultPosition()
-        player.play()
+        controller?.seekToDefaultPosition()
+        controller?.play()
     }
 
     fun pause() {
-        player.pause()
+        controller?.pause()
     }
 
 
@@ -81,8 +117,6 @@ class PlayerController(
     }
 
     fun release() {
-        getStreamJob?.cancel()
-        player.removeListener(this@PlayerController)
-        player.release()
+        controller?.release()
     }
 }
