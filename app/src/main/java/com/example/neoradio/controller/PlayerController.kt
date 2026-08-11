@@ -5,7 +5,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.neoradio.model.Station
-import com.example.neoradio.service.ERadioService
+import com.example.neoradio.repository.StreamRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 class PlayerController(
     context: Context,
     private val coroutineScope: CoroutineScope,
+    private val streamRepository: StreamRepository
 ) : Player.Listener {
     private val player = ExoPlayer.Builder(context).build().apply {
         addListener(this@PlayerController)
@@ -34,9 +35,10 @@ class PlayerController(
     fun play(station: Station) {
         getStreamJob?.cancel()
         _isBuffering.update { true }
+        player.stop()
         _station.update { station }
         getStreamJob = coroutineScope.launch {
-            val stream = ERadioService.getStream(station.url)
+            val stream = streamRepository.getStream(station.url)
             if (stream == null) {
                 _isBuffering.update { false }
                 _station.update { null }

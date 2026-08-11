@@ -15,44 +15,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.neoradio.ui.fragment.regions.component.RegionStations
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun RegionsFragment(modifier: Modifier = Modifier, viewModel: RegionsViewModel = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
+    val coroutineScope = rememberCoroutineScope()
+
     val regions by viewModel.regions.collectAsStateWithLifecycle()
-    var selectedRegion by remember(regions) { mutableIntStateOf(0) }
     val pagerState = rememberPagerState { regions.size }
-
-    LaunchedEffect(selectedRegion) {
-        if (pagerState.currentPage != selectedRegion) {
-            pagerState.animateScrollToPage(selectedRegion)
-        }
-    }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }
-            .collect { page ->
-                selectedRegion = page
-            }
-    }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -88,18 +75,29 @@ fun RegionsFragment(modifier: Modifier = Modifier, viewModel: RegionsViewModel =
                     .padding(innerPadding)
             ) {
                 SecondaryScrollableTabRow(
-                    selectedTabIndex = selectedRegion,
+                    selectedTabIndex = pagerState.currentPage,
+                    indicator = {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(
+                                selectedTabIndex = pagerState.currentPage,
+                                matchContentSize = false
+                            )
+                        )
+                    }
                 ) {
                     regions.forEachIndexed { i, region ->
                         Tab(
-                            selected = i == selectedRegion,
+                            selected = i == pagerState.currentPage,
                             onClick = {
-                                selectedRegion = i
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(i)
+                                }
                             }
                         ) {
                             Text(
                                 region.second,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                                fontSize = 14.sp
                             )
                         }
                     }

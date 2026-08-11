@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -21,8 +22,11 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
@@ -42,6 +46,10 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.mmkv)
+
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.media3.exoplayer)

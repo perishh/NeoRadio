@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.example.neoradio.model.RadioList
 import com.example.neoradio.model.Station
 
@@ -51,7 +50,7 @@ fun LazyListScope.radioListRow(
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(list.second) { station ->
-                    AsyncImage(
+                    NetImage(
                         model = station.thumbnail,
                         contentDescription = station.name,
                         contentScale = ContentScale.Crop,
