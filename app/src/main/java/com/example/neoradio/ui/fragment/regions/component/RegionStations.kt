@@ -9,7 +9,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.neoradio.controller.PlayerController
@@ -23,7 +22,6 @@ fun RegionStations(
     stations: StateFlow<List<RadioList>>
 ) {
     val controller = koinInject<PlayerController>()
-    val context = LocalContext.current
     val lists by stations.collectAsStateWithLifecycle()
 
     LazyColumn(
@@ -37,7 +35,7 @@ fun RegionStations(
             }
         } else {
             radioListRow(lists) {
-                controller.play(context, it)
+                controller.play(it)
             }
         }
     }

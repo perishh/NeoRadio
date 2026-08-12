@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.neoradio.controller.PlayerController
@@ -30,7 +29,6 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeFragment(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
-    val context = LocalContext.current
     val controller = koinInject<PlayerController>()
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -66,7 +64,7 @@ fun HomeFragment(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinV
                     LinearProgressIndicator(modifier = Modifier.fillMaxSize())
                 }
             } else {
-                radioListRow(featured) { controller.play(context, it) }
+                radioListRow(featured) { controller.play(it) }
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
         }

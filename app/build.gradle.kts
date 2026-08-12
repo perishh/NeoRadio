@@ -42,6 +42,7 @@ android {
 kotlin {
     compilerOptions {
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+        optIn.add("androidx.media3.common.util.UnstableApi")
     }
 }
 
