@@ -120,7 +120,10 @@ fun PlayingInfo(
             contentScale = ContentScale.Fit
         )
 
-        Column {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             Text(
                 media!!.name,
                 fontSize = 28.sp,
@@ -132,16 +135,34 @@ fun PlayingInfo(
                 textAlign = TextAlign.Center
             )
 
-            media!!.city?.let { city ->
-                Text(
-                    city,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.W500,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    textAlign = TextAlign.Center
-                )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                media!!.city?.let { city ->
+                    Text(
+                        city,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.W500,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .basicMarquee(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                (listOfNotNull(media!!.category?.second) + media!!.genres.map { it.second }).let { list ->
+                    if (list.isNotEmpty()) {
+                        Text(
+                            list.joinToString(" · "),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.W400,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .basicMarquee(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
 

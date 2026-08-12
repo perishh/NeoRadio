@@ -12,32 +12,32 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class RegionsRepository(
+class GenresRepository(
     private val coroutineScope: CoroutineScope
 ) {
     private val kv = MMKV.defaultMMKV()
 
-    private val regionStations: MutableMap<String, MutableStateFlow<List<RadioList>>> =
+    private val genreStations: MutableMap<String, MutableStateFlow<List<RadioList>>> =
         mutableMapOf()
 
-    fun getStations(region: String): StateFlow<List<RadioList>> {
-        if (regionStations.containsKey(region)) {
-            return regionStations[region]!!
+    fun getStations(genre: String): StateFlow<List<RadioList>> {
+        if (genreStations.containsKey(genre)) {
+            return genreStations[genre]!!
         }
 
         val sf = MutableStateFlow<List<RadioList>>(emptyList())
-        regionStations[region] = sf
+        genreStations[genre] = sf
 
         coroutineScope.launch(Dispatchers.IO) {
-            kv.decodeString("region|$region")?.let { encoded ->
+            kv.decodeString("genre|$genre")?.let { encoded ->
                 val res = Json.decodeFromString<List<RadioList>>(encoded)
                 sf.update { res }
             }
 
             val res =
-                ERadio.getLocationStations(region).groupBy { it.city ?: "ΆΛΛΟ" }.toList()
+                ERadio.getCategoryStations(genre).groupBy { it.city ?: "ΆΛΛΟ" }.toList()
             sf.update { res }
-            kv.encode("region|$region", Json.encodeToString(res))
+            kv.encode("genre|$genre", Json.encodeToString(res))
         }
 
         return sf

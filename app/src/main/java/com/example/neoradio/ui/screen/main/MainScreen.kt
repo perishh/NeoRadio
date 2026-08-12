@@ -9,6 +9,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.ContextCompat
@@ -31,10 +36,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.neoradio.ui.fragment.genres.GenresFragment
 import com.example.neoradio.ui.fragment.home.HomeFragment
 import com.example.neoradio.ui.fragment.regions.RegionsFragment
 import com.example.neoradio.ui.screen.main.component.BottomSheet
 import com.example.neoradio.ui.screen.main.component.FragmentNavigationBar
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 val LocalBottomSheet = staticCompositionLocalOf<SheetState> {
     error("SheetState not provided")
@@ -42,6 +50,25 @@ val LocalBottomSheet = staticCompositionLocalOf<SheetState> {
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("NavHostController not provided")
+}
+
+@Serializable
+sealed class Fragments(
+    @property:Transient val icon: ImageVector = Icons.Rounded.Home,
+    @property:Transient val label: String = ""
+) {
+    @Serializable
+    object Home : Fragments(Icons.Rounded.Home, "Αρχική")
+
+    @Serializable
+    object Regions : Fragments(Icons.Rounded.LocationOn, "Περιοχές")
+
+    @Serializable
+    object Genres : Fragments(Icons.Rounded.MusicNote, "Είδη")
+
+    companion object {
+        val all = listOf(Home, Regions, Genres)
+    }
 }
 
 @Composable
@@ -93,14 +120,17 @@ fun MainScreen() {
                 ) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "home",
+                        startDestination = Fragments.Home,
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        composable("home") {
+                        composable<Fragments.Home> {
                             HomeFragment()
                         }
-                        composable("regions") {
+                        composable<Fragments.Regions> {
                             RegionsFragment()
+                        }
+                        composable<Fragments.Genres> {
+                            GenresFragment()
                         }
                     }
                 }

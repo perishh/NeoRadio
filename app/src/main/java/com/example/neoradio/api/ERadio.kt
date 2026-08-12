@@ -1,4 +1,4 @@
-package com.example.neoradio.service
+package com.example.neoradio.api
 
 import com.example.neoradio.model.HomePage
 import com.example.neoradio.model.Station
@@ -9,8 +9,7 @@ import com.fleeksoft.ksoup.parseInputStream
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-
-object ERadioService {
+object ERadio {
     private const val baseUrl = "https://www.e-radio.gr"
     private val client = OkHttpClient.Builder()
         .build()
@@ -54,24 +53,49 @@ object ERadioService {
         val url = li.selectFirst("a")?.attr("href") ?: return null
         val name = li.selectFirst("span.sTitle")?.text() ?: return null
         val city = li.selectFirst("a")?.ownText()
-        return Station(url, thumbnail, name, city)
+        // TODO: Genres
+        return Station(url, thumbnail, name, city, null, emptyList())
     }
+
+    private fun parseStationInfo(div: Element): Station? {
+        val img = div.selectFirst("img") ?: return null
+        val thumbnail = img.attr("src")
+        val name = img.attr("alt")
+        val url = div.selectFirst("a")?.attr("href") ?: return null
+        val city = div.selectFirst(".sMeta_Location")?.ownText()
+
+        val meta =
+            div.select(".sMetaTag").mapNotNull { Pair(it.attr("href"), it.ownText()) }
+
+        val category = meta.firstOrNull { "/category/" in it.first }?.let {
+            Pair(it.first.split("/").last(), it.second)
+        }
+
+        val genres = meta.filter { "/music/" in it.first }.map {
+            Pair(it.first.split("/").last(), it.second)
+        }
+
+        return Station(
+            url = url,
+            thumbnail = thumbnail,
+            name = name,
+            city = city,
+            category = category,
+            genres = genres
+        )
+    }
+
+    suspend fun getCategoryStations(category: String): List<Station> =
+        getHTML("/category/$category") { document ->
+            document.select("#content > .stationEntry").mapNotNull { div ->
+                parseStationInfo(div)
+            }
+        }
 
     suspend fun getLocationStations(location: String): List<Station> =
         getHTML("/location/$location") { document ->
             document.select("#content > .stationEntry").mapNotNull { div ->
-                val img = div.selectFirst("img") ?: return@mapNotNull null
-                val thumbnail = img.attr("src")
-                val name = img.attr("alt")
-                val url = div.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                val city = div.selectFirst(".sMeta_Location")?.ownText()
-
-                Station(
-                    url = url,
-                    thumbnail = thumbnail,
-                    name = name,
-                    city = city
-                )
+                parseStationInfo(div)
             }
         }
 
@@ -112,6 +136,13 @@ object ERadioService {
                 regex.findAll(body).map { Pair(it.groupValues[1], it.groupValues[2]) }
                     .distinctBy { it.first }
             }
+            val categories =
+                document.selectFirst("#tabListenCategoryMenu")?.select("a")?.mapNotNull {
+                    Pair(
+                        it.attribute("href")?.attributeValue?.split("/")?.last()
+                            ?: return@mapNotNull null, it.ownText()
+                    )
+                } ?: emptyList()
             val radioLists = document.select(".panel").mapNotNull { list ->
                 val title = list.selectFirst("h2 > a")?.text() ?: return@mapNotNull null
                 val radios =
@@ -120,7 +151,8 @@ object ERadioService {
             }
             HomePage(
                 regions = regions.toList(),
-                radioLists = radioLists
+                radioLists = radioLists,
+                categories = categories
             )
         }
 }

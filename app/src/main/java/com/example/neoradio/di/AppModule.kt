@@ -1,7 +1,9 @@
 package com.example.neoradio.di
 
 import com.example.neoradio.controller.PlayerController
+import com.example.neoradio.repository.GenresRepository
 import com.example.neoradio.repository.RegionsRepository
+import com.example.neoradio.ui.fragment.genres.GenresViewModel
 import com.example.neoradio.ui.fragment.home.HomeViewModel
 import com.example.neoradio.ui.fragment.regions.RegionsViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -17,9 +19,11 @@ val appModule = module {
     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
 
     singleOf(::RegionsRepository)
+    singleOf(::GenresRepository)
 
     singleOf(::PlayerController) { createdAtStart() } onClose { it?.release() }
 
     viewModelOf(::HomeViewModel)
     viewModelOf(::RegionsViewModel)
+    viewModelOf(::GenresViewModel)
 }

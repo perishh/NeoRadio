@@ -74,15 +74,20 @@ fun Miniplayer(modifier: Modifier = Modifier, onExpand: () -> Unit) {
                         .fillMaxWidth()
                         .basicMarquee()
                 )
-                station.city?.let { city ->
-                    Text(
-                        city,
-                        fontSize = 14.sp,
-                        lineHeight = 14.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .basicMarquee()
-                    )
+                (listOfNotNull(
+                    station.city,
+                    station.category?.second
+                ) + station.genres.map { it.second }).let { list ->
+                    if (list.isNotEmpty()) {
+                        Text(
+                            list.joinToString(" · "),
+                            fontSize = 14.sp,
+                            lineHeight = 14.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .basicMarquee()
+                        )
+                    }
                 }
             }
             AnimatedContent(isBuffering) {

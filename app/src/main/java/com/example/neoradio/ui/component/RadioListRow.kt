@@ -29,7 +29,7 @@ fun LazyListScope.radioListRow(
     lists: List<RadioList>,
     onClick: (Station) -> Unit,
 ) {
-    items(lists) { list ->
+    items(lists, key = { it.first }) { list ->
         Column(
             modifier = Modifier
                 .animateItem()
@@ -49,12 +49,13 @@ fun LazyListScope.radioListRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                items(list.second) { station ->
+                items(list.second, key = { it.url }) { station ->
                     NetImage(
                         model = station.thumbnail,
                         contentDescription = station.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
+                            .animateItem()
                             .size(96.dp)
                             .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp))
                             .background(

@@ -7,5 +7,6 @@ typealias RadioList = Pair<String, List<Station>>
 @Serializable
 data class HomePage(
     val regions: List<Pair<String, String>>,
-    val radioLists: List<RadioList>
+    val categories: List<Genre>,
+    val radioLists: List<RadioList>,
 )

@@ -1,6 +1,6 @@
 package com.example.neoradio.repository
 
-import com.example.neoradio.service.ERadioService
+import com.example.neoradio.api.ERadio
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,7 +14,7 @@ object StreamRepository {
         if (cached != null) {
             return@withContext cached
         } else {
-            val res = ERadioService.getStream(url)?.let {
+            val res = ERadio.getStream(url)?.let {
                 kv.encode("stream|$url", it)
                 it
             }
