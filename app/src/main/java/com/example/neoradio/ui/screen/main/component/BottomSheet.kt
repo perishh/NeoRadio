@@ -90,7 +90,11 @@ fun BottomSheet(
                 }
             ) { isBig ->
                 if (isBig) {
-                    PlayingInfo()
+                    PlayingInfo {
+                        coroutineScope.launch {
+                            sheetState.partialExpand()
+                        }
+                    }
                 } else {
                     Miniplayer(
                         modifier = Modifier.onSizeChanged { size ->

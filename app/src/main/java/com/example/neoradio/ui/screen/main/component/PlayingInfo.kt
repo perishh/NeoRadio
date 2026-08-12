@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Snooze
@@ -20,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,7 +44,9 @@ import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.minutes
 
 @Composable
-fun PlayingInfo() {
+fun PlayingInfo(
+    onDismiss: () -> Unit
+) {
     val controller = koinInject<PlayerController>()
 
     val media by controller.station.collectAsStateWithLifecycle()
@@ -78,9 +82,37 @@ fun PlayingInfo() {
     }
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(top = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                IconButton(
+                    onClick = {
+                        onDismiss()
+                    }
+                ) {
+
+                    Icon(
+                        Icons.Rounded.KeyboardArrowDown,
+                        contentDescription = "Shrink"
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                Text("Παίζει τώρα", fontSize = 20.sp, fontWeight = FontWeight.W500)
+            }
+
+            Box(modifier = Modifier.weight(1f))
+        }
         NetImage(
             model = media!!.thumbnail,
             contentDescription = null,
@@ -88,26 +120,29 @@ fun PlayingInfo() {
             contentScale = ContentScale.Fit
         )
 
-        Text(
-            media!!.name,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.W600,
-            modifier = Modifier
-                .fillMaxWidth()
-                .basicMarquee()
-                .padding(top = 32.dp),
-            textAlign = TextAlign.Center
-        )
-        media!!.city?.let { city ->
+        Column {
             Text(
-                city,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.W500,
+                media!!.name,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.W600,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .basicMarquee(),
+                    .basicMarquee()
+                    .padding(top = 32.dp),
                 textAlign = TextAlign.Center
             )
+
+            media!!.city?.let { city ->
+                Text(
+                    city,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.W500,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .basicMarquee(),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         Waveform(
@@ -118,78 +153,83 @@ fun PlayingInfo() {
                 .padding(horizontal = 24.dp)
         )
 
-        FilledTonalIconButton(
-            modifier = Modifier
-                .padding(top = 48.dp)
-                .size(84.dp),
-            enabled = !isBuffering,
-            onClick = {
-                if (isPlaying) {
-                    controller.pause()
-                } else {
-                    controller.play()
-                }
-            }
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AnimatedContent(
-                    isPlaying,
-                    modifier = Modifier.align(Alignment.Center)
-                ) { isPlaying ->
-                    if (isPlaying) {
-                        Icon(
-                            Icons.Rounded.Pause,
-                            contentDescription = "Pause",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    } else {
-                        Icon(
-                            Icons.Rounded.PlayArrow,
-                            contentDescription = "Play",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-                androidx.compose.animation.AnimatedVisibility(
-                    isBuffering,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .fillMaxSize()
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.fillMaxSize())
-                }
-            }
-        }
-
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(top = 32.dp)
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp)
         ) {
-            FilledTonalIconToggleButton(
-                enabled = !sleepTimerDisabled,
-                checked = remainingTime != null,
-                onCheckedChange = {
-                    if (remainingTime != null) {
-                        controller.stopSleepTimer()
-                        sleepTimerDisabled = true
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                FilledTonalIconToggleButton(
+                    enabled = !sleepTimerDisabled,
+                    checked = remainingTime != null,
+                    onCheckedChange = {
+                        if (remainingTime != null) {
+                            controller.stopSleepTimer()
+                            sleepTimerDisabled = true
+                        } else {
+                            isDialogOpen = true
+                        }
+                    }
+                ) {
+                    Icon(Icons.Rounded.Snooze, contentDescription = "Sleep timer")
+                }
+                AnimatedVisibility(remainingTime != null) {
+                    Text(
+                        text = remainingTime?.toString() ?: "00:00",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.W500,
+                        modifier = Modifier.padding(start = 16.dp)
+                    )
+                }
+            }
+
+            FilledTonalIconButton(
+                modifier = Modifier
+                    .size(84.dp),
+                enabled = !isBuffering,
+                onClick = {
+                    if (isPlaying) {
+                        controller.pause()
                     } else {
-                        isDialogOpen = true
+                        controller.play()
                     }
                 }
             ) {
-                Icon(Icons.Rounded.Snooze, contentDescription = "Sleep timer")
-            }
-            AnimatedVisibility(remainingTime != null) {
-                Text(
-                    text = remainingTime?.toString() ?: "00:00",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.W500,
-                    modifier = Modifier.padding(start = 16.dp)
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AnimatedContent(
+                        isPlaying,
+                        modifier = Modifier.align(Alignment.Center)
+                    ) { isPlaying ->
+                        if (isPlaying) {
+                            Icon(
+                                Icons.Rounded.Pause,
+                                contentDescription = "Pause",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        } else {
+                            Icon(
+                                Icons.Rounded.PlayArrow,
+                                contentDescription = "Play",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        isBuffering,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxSize()
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.fillMaxSize())
+                    }
+                }
             }
         }
-
-
     }
 }
