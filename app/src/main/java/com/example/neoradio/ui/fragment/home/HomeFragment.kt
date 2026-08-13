@@ -33,6 +33,7 @@ fun HomeFragment(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinV
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
+    val liked by viewModel.liked.collectAsStateWithLifecycle()
     val featured by viewModel.featured.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -64,6 +65,7 @@ fun HomeFragment(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinV
                     LinearProgressIndicator(modifier = Modifier.fillMaxSize())
                 }
             } else {
+                radioListRow(listOf(Pair("ΑΓΑΠΗΜΕΝΑ", liked))) { controller.play(it) }
                 radioListRow(featured) { controller.play(it) }
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }

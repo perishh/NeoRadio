@@ -2,12 +2,14 @@ package com.example.neoradio.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -21,8 +23,10 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.example.neoradio.processor.WaveformAudioProcessor
+import com.example.neoradio.ui.activity.MainActivity
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,15 +39,19 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @UnstableApi
-class PlaybackService : MediaSessionService(), MediaSession.Callback {
+class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Listener {
+    private val kv = MMKV.defaultMMKV()
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private lateinit var player: ExoPlayer
     private lateinit var mediaSession: MediaSession
 
+    private var timeTrackJob: Job? = null
     private var sleepTimerJob: Job? = null
     private val remainingTime = MutableStateFlow<Duration?>(null)
 
@@ -75,8 +83,23 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
             .setHandleAudioBecomingNoisy(true)
             .build()
 
+        player.addListener(this)
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("PROMPT_PLAYER", "")
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         mediaSession = MediaSession.Builder(this, player)
             .setCallback(this)
+            .setSessionActivity(pendingIntent)
             .build()
     }
 
@@ -84,7 +107,43 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        player.stop()
         stopSelf()
+    }
+
+    private fun startTimeTracking(id: String) {
+        timeTrackJob?.cancel()
+        timeTrackJob = serviceScope.launch {
+            while (isActive) {
+                delay(1.minutes)
+                launch(Dispatchers.IO) {
+                    val savedTime = kv.getInt("time|$id", 0)
+                    kv.putInt("time|$id", savedTime + 1)
+                }
+            }
+        }
+    }
+
+    private fun cancelTimeTracking() {
+        timeTrackJob?.cancel()
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) {
+            player.currentMediaItem?.mediaId?.let { id ->
+                startTimeTracking(id)
+            }
+        } else {
+            cancelTimeTracking()
+        }
+    }
+
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        if (mediaItem != null && player.isPlaying) {
+            startTimeTracking(mediaItem.mediaId)
+        } else {
+            cancelTimeTracking()
+        }
     }
 
     fun startSleepTimer(duration: Duration) {
@@ -194,8 +253,10 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
     }
 
     override fun onDestroy() {
-        sleepTimerJob?.cancel()
+        cancelTimeTracking()
+        cancelSleepTimer()
         serviceScope.cancel()
+        player.removeListener(this)
         mediaSession.run {
             player.release()
             release()

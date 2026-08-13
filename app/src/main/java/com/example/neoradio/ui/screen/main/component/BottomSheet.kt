@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import com.example.neoradio.ui.activity.LocalSheetPrompt
 import com.example.neoradio.ui.screen.main.LocalBottomSheet
 import kotlinx.coroutines.launch
 
@@ -33,9 +34,17 @@ import kotlinx.coroutines.launch
 fun BottomSheet(
     onSizeChanged: (Int) -> Unit
 ) {
+    var sheetPrompt by LocalSheetPrompt.current
     val sheetState = LocalBottomSheet.current
 
     val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(sheetPrompt) {
+        if (sheetPrompt) {
+            sheetState.expand()
+            sheetPrompt = false
+        }
+    }
 
     var isFullyExpanded by rememberSaveable { mutableStateOf(false) }
     var isToBeFullyExpanded by rememberSaveable { mutableStateOf(false) }

@@ -64,8 +64,10 @@ class PlayerController(
         // Launch last played station
         coroutineScope.launch {
             kv.decodeString("last")?.let { last ->
-                val station = Json.decodeFromString<Station>(last)
-                _station.update { station }
+                kv.decodeString("station|$last")?.let { last ->
+                    val station = Json.decodeFromString<Station>(last)
+                    _station.update { station }
+                }
             }
         }
     }
@@ -78,7 +80,8 @@ class PlayerController(
         _station.update { station }
 
         coroutineScope.launch {
-            kv.encode("last", Json.encodeToString(station))
+            kv.encode("station|${station.url}", Json.encodeToString(station))
+            kv.encode("last", station.url)
         }
 
         getStreamJob = coroutineScope.launch {

@@ -30,43 +30,45 @@ fun LazyListScope.radioListRow(
     onClick: (Station) -> Unit,
 ) {
     items(lists, key = { it.first }) { list ->
-        Column(
-            modifier = Modifier
-                .animateItem()
-                .fillMaxWidth()
-        ) {
-            Text(
-                list.first,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.W600,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-            LazyRow(
+        if (list.second.isNotEmpty()) {
+            Column(
                 modifier = Modifier
+                    .animateItem()
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                items(list.second, key = { it.url }) { station ->
-                    NetImage(
-                        model = station.thumbnail,
-                        contentDescription = station.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .animateItem()
-                            .size(96.dp)
-                            .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp))
-                            .background(
-                                Color.White,
-                                shape = RoundedCornerShape(8.dp)
-                            ) // TODO: Make material
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                onClick(station)
-                            }
-                    )
+                Text(
+                    list.first,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.W600,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(list.second, key = { it.url }) { station ->
+                        NetImage(
+                            model = station.thumbnail,
+                            contentDescription = station.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .animateItem()
+                                .size(96.dp)
+                                .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp))
+                                .background(
+                                    Color.White,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) // TODO: Make material
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    onClick(station)
+                                }
+                        )
+                    }
                 }
             }
         }
