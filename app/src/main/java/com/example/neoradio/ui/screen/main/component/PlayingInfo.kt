@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.neoradio.controller.PlayerController
+import com.example.neoradio.player.PlayerController
 import com.example.neoradio.ui.component.NetImage
 import com.example.neoradio.ui.component.Waveform
 import org.koin.compose.koinInject

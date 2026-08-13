@@ -1,4 +1,4 @@
-package com.example.neoradio.controller
+package com.example.neoradio.player
 
 import android.content.ComponentName
 import android.content.Context
@@ -13,7 +13,6 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import com.example.neoradio.model.Station
 import com.example.neoradio.repository.StreamRepository
-import com.example.neoradio.service.PlaybackService
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,6 +1,6 @@
 package com.example.neoradio.di
 
-import com.example.neoradio.controller.PlayerController
+import com.example.neoradio.player.PlayerController
 import com.example.neoradio.repository.GenresRepository
 import com.example.neoradio.repository.RegionsRepository
 import com.example.neoradio.ui.fragment.genres.GenresViewModel

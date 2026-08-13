@@ -1,4 +1,4 @@
-package com.example.neoradio.processor
+package com.example.neoradio.player
 
 import androidx.annotation.OptIn
 import androidx.media3.common.C

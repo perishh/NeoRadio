@@ -1,4 +1,4 @@
-package com.example.neoradio.service
+package com.example.neoradio.player
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,19 +10,20 @@ import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
-import com.example.neoradio.processor.WaveformAudioProcessor
 import com.example.neoradio.ui.activity.MainActivity
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -77,10 +78,14 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
                 .build()
         }
 
+        val mediaSourceFactory = DefaultMediaSourceFactory(this)
+            .setLoadErrorHandlingPolicy(RetryErrorHandlingPolicy())
+
         player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(audioAttributes, true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
+            .setMediaSourceFactory(mediaSourceFactory)
             .build()
 
         player.addListener(this)
@@ -108,6 +113,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         player.stop()
+        player.clearMediaItems()
         stopSelf()
     }
 
@@ -240,7 +246,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
                 "Playback Notifications",
                 NotificationManager.IMPORTANCE_LOW
             )
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
 
@@ -250,6 +256,19 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
                 .setNotificationId(1001)
                 .build()
         )
+    }
+
+    override fun onPlayerError(error: PlaybackException) {
+        if (isNetworkError(error)) {
+            player.prepare()
+            player.play()
+        }
+    }
+
+    private fun isNetworkError(error: PlaybackException): Boolean {
+        return error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED
     }
 
     override fun onDestroy() {

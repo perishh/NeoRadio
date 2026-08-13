@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.neoradio.controller.PlayerController
+import com.example.neoradio.player.PlayerController
 import com.example.neoradio.ui.component.radioListRow
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
