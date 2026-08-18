@@ -16,7 +16,7 @@ object LikedRepository {
             kv.decodeString("station|$url")?.let { station ->
                 Pair(Json.decodeFromString<Station>(station), time)
             }
-        }.sortedBy { it.second }.map { it.first }
+        }.sortedByDescending { it.second }.map { it.first }
     }
 
 }

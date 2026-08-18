@@ -42,6 +42,7 @@ fun Miniplayer(modifier: Modifier = Modifier, onExpand: () -> Unit) {
     val controller = koinInject<PlayerController>()
 
     val station by controller.station.collectAsStateWithLifecycle()
+    val song by controller.song.collectAsStateWithLifecycle()
     val isPlaying by controller.isPlaying.collectAsStateWithLifecycle()
     val isBuffering by controller.isBuffering.collectAsStateWithLifecycle()
 
@@ -74,10 +75,10 @@ fun Miniplayer(modifier: Modifier = Modifier, onExpand: () -> Unit) {
                         .fillMaxWidth()
                         .basicMarquee()
                 )
-                (listOfNotNull(
+                (song?.let { listOf(it.title, it.artist) } ?: (listOfNotNull(
                     station.city,
                     station.category?.second
-                ) + station.genres.map { it.second }).let { list ->
+                ) + station.genres.map { it.second })).let { list ->
                     if (list.isNotEmpty()) {
                         Text(
                             list.joinToString(" · "),

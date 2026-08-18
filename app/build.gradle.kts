@@ -47,6 +47,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.palette.ktx)
+
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.mmkv)

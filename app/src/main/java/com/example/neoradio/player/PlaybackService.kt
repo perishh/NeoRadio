@@ -13,6 +13,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
@@ -24,6 +25,9 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
+import com.example.neoradio.api.ERadio
+import com.example.neoradio.model.Song
+import com.example.neoradio.model.Station
 import com.example.neoradio.ui.activity.MainActivity
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -38,6 +42,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -46,7 +55,6 @@ import kotlin.time.Duration.Companion.seconds
 @UnstableApi
 class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Listener {
     private val kv = MMKV.defaultMMKV()
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private lateinit var player: ExoPlayer
@@ -54,6 +62,8 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
 
     private var timeTrackJob: Job? = null
     private var sleepTimerJob: Job? = null
+    private var metadataJob: Job? = null
+
     private val remainingTime = MutableStateFlow<Duration?>(null)
 
     override fun onCreate() {
@@ -78,7 +88,12 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
                 .build()
         }
 
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+
         val mediaSourceFactory = DefaultMediaSourceFactory(this)
+            .setDataSourceFactory(StreamResolvingDataSourceFactory(httpDataSourceFactory) { stream ->
+                startMetadataJob(stream.history, stream.next)
+            })
             .setLoadErrorHandlingPolicy(RetryErrorHandlingPolicy())
 
         player = ExoPlayer.Builder(this, renderersFactory)
@@ -117,6 +132,92 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
         stopSelf()
     }
 
+    private fun updateMetadata(song: Song?) {
+        val currentItem = player.currentMediaItem ?: return
+        val currentIndex = player.currentMediaItemIndex
+
+        var station: Station? = null
+        val bundle = currentItem.mediaMetadata.extras?.apply {
+            station = getString("station")?.let { Json.decodeFromString(it) }
+            putString("song", song?.let { Json.encodeToString(it) })
+        }
+
+        val updatedMetadata = currentItem.mediaMetadata.buildUpon()
+            .setTitle(song?.title ?: station?.name)
+            .setArtist(
+                song?.artist ?: listOfNotNull(
+                    station?.city,
+                    station?.category?.second
+                ).joinToString(" · ")
+            )
+            .setExtras(bundle)
+            .build()
+
+        val updatedMediaItem = currentItem.buildUpon()
+            .setMediaMetadata(updatedMetadata)
+            .build()
+
+        player.replaceMediaItem(currentIndex, updatedMediaItem)
+    }
+
+    private fun startMetadataJob(history: String?, next: String?) {
+        metadataJob?.cancel()
+
+        if (history != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                metadataJob = serviceScope.launch {
+                    val historyList = ERadio.parseHistory(history, next)
+
+                    val formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
+                    while (isActive) {
+                        val now = LocalTime.now()
+
+                        var current: Song? = null
+                        var next: Song? = null
+
+                        // Parse string startTimes into LocalTime once to compare safely
+                        for ((index, entry) in historyList.withIndex()) {
+                            val entryTime = LocalTime.parse(entry.startTime, formatter)
+                            if (entryTime.isAfter(now)) {
+                                next = entry
+                                current = historyList.getOrNull(index - 1)
+                                break
+                            }
+                        }
+
+                        // If no song is in the future, the current song is the last item
+                        if (next == null) {
+                            current = historyList.lastOrNull()
+                        }
+
+                        // Update UI if current track exists
+                        if (current != null) {
+                            withContext(Dispatchers.Main) {
+                                updateMetadata(current)
+                            }
+                        }
+
+                        // Stop if there is no upcoming track
+                        if (next == null) break
+
+                        // Calculate delay until the next track using java.time ChronoUnit
+                        val nextTime = LocalTime.parse(next.startTime, formatter)
+                        val millisToWait = ChronoUnit.MILLIS.between(now, nextTime)
+
+                        if (millisToWait > 0) {
+                            delay((millisToWait + 1000).milliseconds)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun cancelMetadataJob() {
+        metadataJob?.cancel()
+    }
+
     private fun startTimeTracking(id: String) {
         timeTrackJob?.cancel()
         timeTrackJob = serviceScope.launch {
@@ -145,6 +246,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        cancelMetadataJob()
         if (mediaItem != null && player.isPlaying) {
             startTimeTracking(mediaItem.mediaId)
         } else {
@@ -204,6 +306,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
             .add(Player.COMMAND_SET_MEDIA_ITEM)
             .add(Player.COMMAND_GET_CURRENT_MEDIA_ITEM)
             .add(Player.COMMAND_SEEK_TO_DEFAULT_POSITION)
+            .add(Player.COMMAND_GET_METADATA)
             .build()
 
         return MediaSession.ConnectionResult.accept(
@@ -272,6 +375,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback, Player.Lis
     }
 
     override fun onDestroy() {
+        cancelMetadataJob()
         cancelTimeTracking()
         cancelSleepTimer()
         serviceScope.cancel()

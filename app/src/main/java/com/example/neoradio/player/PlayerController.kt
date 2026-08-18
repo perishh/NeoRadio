@@ -4,28 +4,23 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
-import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
+import com.example.neoradio.model.Song
 import com.example.neoradio.model.Station
-import com.example.neoradio.repository.StreamRepository
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -47,7 +42,10 @@ class PlayerController(
         val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
 
         controllerFuture.addListener({
-            _controller.value = controllerFuture.get().apply { addListener(this@PlayerController) }
+            _controller.value = controllerFuture.get().apply {
+                addListener(this@PlayerController)
+            }
+            loadLastPlayed()
         }, ContextCompat.getMainExecutor(context))
     }
 
@@ -57,64 +55,58 @@ class PlayerController(
     private val _station = MutableStateFlow<Station?>(null)
     val station = _station.asStateFlow()
 
-    private var getStreamJob: Job? = null
+    private val _song = MutableStateFlow<Song?>(null)
+    val song = _song.asStateFlow()
 
-    init {
-        // Launch last played station
-        coroutineScope.launch {
-            kv.decodeString("last")?.let { last ->
-                kv.decodeString("station|$last")?.let { last ->
-                    val station = Json.decodeFromString<Station>(last)
-                    _station.update { station }
+
+    fun loadLastPlayed() {
+        if (controller?.currentMediaItem == null) {
+            // Launch last played station
+            coroutineScope.launch {
+                kv.decodeString("last")?.let { last ->
+                    kv.decodeString("station|$last")?.let { last ->
+                        val station = Json.decodeFromString<Station>(last)
+                        withContext(Dispatchers.Main) {
+                            play(station, false)
+                        }
+                    }
                 }
             }
+        } else {
+            // TODO
+            onMediaMetadataChanged(controller!!.mediaMetadata)
         }
     }
 
-    fun play(station: Station) {
-        getStreamJob?.cancel()
-        controller?.stop()
+    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+        controller?.mediaMetadata?.extras?.let { bundle ->
+            val station = bundle.getString("station")?.let { station ->
+                Json.decodeFromString<Station>(station)
+            }
+            _station.update { station }
 
-        _isBuffering.update { true }
-        _station.update { station }
-
-        coroutineScope.launch {
-            kv.encode("station|${station.url}", Json.encodeToString(station))
-            kv.encode("last", station.url)
+            val song = bundle.getString("song")?.let { song ->
+                Json.decodeFromString<Song>(song)
+            }
+            _song.update { song }
         }
+    }
 
-        getStreamJob = coroutineScope.launch {
-            val stream = StreamRepository.getStream(station.url)
-            _isBuffering.update { false }
-            if (stream == null) {
-                _station.update { null }
-            } else {
-                withContext(Dispatchers.Main) {
-                    _controller.first { it != null }?.apply {
-                        val mediaItem = MediaItem.Builder()
-                            .setUri(stream)
-                            .setMediaId(station.url)
-                            .setMediaMetadata(
-                                MediaMetadata.Builder()
-                                    .setTitle(station.name)
-                                    .setArtist(station.city)
-                                    .setIsPlayable(true)
-                                    .setArtworkUri(station.thumbnail.toUri())
-                                    .build()
-                            )
-                            .setLiveConfiguration(
-                                MediaItem.LiveConfiguration.Builder()
-                                    .setTargetOffsetMs(5_000)
-                                    .setMinPlaybackSpeed(0.95f)
-                                    .setMaxPlaybackSpeed(1.05f)
-                                    .build()
-                            )
-                            .build()
-                        setMediaItem(mediaItem)
-                        prepare()
-                        playWhenReady = true
-                    }
-                }
+    fun play(station: Station, play: Boolean = true) {
+        _controller.value?.let { controller ->
+            _isBuffering.update { true }
+            _song.update { null }
+            _station.update { station }
+
+            coroutineScope.launch {
+                kv.encode("station|${station.url}", Json.encodeToString(station))
+                kv.encode("last", station.url)
+            }
+
+            controller.apply {
+                setMediaItem(station.toMediaItem())
+                prepare()
+                playWhenReady = play
             }
         }
     }
@@ -149,9 +141,9 @@ class PlayerController(
         _isPlaying.update { isPlaying }
     }
 
-    // ----------------
-    //   SLEEP TIMER
-    // ----------------
+// ----------------
+//   SLEEP TIMER
+// ----------------
 
     val remainingTime = flow {
         while (true) {
@@ -193,7 +185,7 @@ class PlayerController(
     }
 
     fun release() {
-        getStreamJob?.cancel()
+        controller?.removeListener(this@PlayerController)
         controller?.release()
     }
 

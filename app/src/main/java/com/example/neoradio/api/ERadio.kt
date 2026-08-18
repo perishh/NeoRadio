@@ -1,7 +1,10 @@
 package com.example.neoradio.api
 
 import com.example.neoradio.model.HomePage
+import com.example.neoradio.model.Song
 import com.example.neoradio.model.Station
+import com.example.neoradio.model.Stream
+import com.example.neoradio.unescapeXML
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
@@ -121,8 +124,20 @@ object ERadio {
             }
         }
 
+    private fun getHistoryAndNext(body: String): Pair<String?, String?> {
+        var regex = "\"(.*?AirPlayHistory\\.xml)".toRegex()
+        var match = regex.find(body)
+        val history = match?.groupValues?.getOrNull(1)
 
-    suspend fun getStream(url: String): String? {
+        regex = "\"(.*?AirPlayNext\\.xml)".toRegex()
+        match = regex.find(body)
+        val next = match?.groupValues?.getOrNull(1)
+
+        return Pair(history, next)
+    }
+
+
+    suspend fun getStream(url: String, history: String? = null, next: String? = null): Stream? {
         val res = get(url)
         val body = res.body.string()
         res.close()
@@ -132,7 +147,9 @@ object ERadio {
 
         if (match != null) {
             val (source) = match.destructured
-            return source
+
+            val (newHistory, newNext) = getHistoryAndNext(body)
+            return Stream(source, history ?: newHistory, next ?: newNext)
         } else {
             regex = "<iframe.*?src=\"(.*?)\".*?>".toRegex()
             match = regex.find(body)
@@ -142,7 +159,9 @@ object ERadio {
                 if (source.startsWith("//")) {
                     source = "https:$source"
                 }
-                return getStream(source)
+
+                val (newHistory, newNext) = getHistoryAndNext(body)
+                return getStream(source, history ?: newHistory, next ?: newNext)
             }
         }
 
@@ -177,4 +196,22 @@ object ERadio {
                 categories = categories
             )
         }
+
+    suspend fun parseHistory(url: String, next: String?): List<Song> {
+        val history = get("$url?timestamp=${System.currentTimeMillis()}").body.string()
+        val next =
+            next?.let { get("$it?timestamp=${System.currentTimeMillis()}").body.string() } ?: ""
+
+        val regex =
+            "(?ms)<Song.*?title=\"(.*?)\".*?>.*?Artist name=\"(.*?)\".*?Info StartTime=\"(.*?)\".*?Media runTime=\"(.*?)\".*?<\\/Song>".toRegex()
+        return regex.findAll(history + next).map { match ->
+            val (title, artist, startTime, runTime) = match.destructured
+            Song(
+                title.unescapeXML(),
+                artist.unescapeXML(),
+                startTime.unescapeXML(),
+                runTime.unescapeXML()
+            )
+        }.toList()
+    }
 }

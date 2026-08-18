@@ -13,7 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Snooze
@@ -52,6 +55,8 @@ fun PlayingInfo(
     val media by controller.station.collectAsStateWithLifecycle()
 
     if (media == null) return
+
+    val song by controller.song.collectAsStateWithLifecycle()
 
     val isPlaying by controller.isPlaying.collectAsStateWithLifecycle()
     val isBuffering by controller.isBuffering.collectAsStateWithLifecycle()
@@ -139,40 +144,98 @@ fun PlayingInfo(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 media!!.city?.let { city ->
-                    Text(
-                        city,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.W500,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .basicMarquee(),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                (listOfNotNull(media!!.category?.second) + media!!.genres.map { it.second }).let { list ->
-                    if (list.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Rounded.LocationOn,
+                            contentDescription = "City",
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
-                            list.joinToString(" · "),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.W400,
+                            city,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.W500,
                             modifier = Modifier
-                                .fillMaxWidth()
                                 .basicMarquee(),
                             textAlign = TextAlign.Center
                         )
                     }
                 }
+
+                (listOfNotNull(media!!.category?.second) + media!!.genres.map { it.second }).let { list ->
+                    if (list.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.Category,
+                                contentDescription = "Genre",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                list.joinToString(" · "),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.W400,
+                                modifier = Modifier
+                                    .basicMarquee(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
             }
         }
 
-        Waveform(
+        Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .padding(top = 48.dp)
-                .height(48.dp)
-                .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-        )
+                .padding(top = 48.dp)
+        ) {
+            Waveform(
+                modifier = Modifier
+                    .height(48.dp)
+                    .fillMaxWidth()
+            )
+            song?.let { song ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.MusicNote,
+                        contentDescription = "Currently Playing",
+                        modifier = Modifier.size(38.dp)
+                    )
+                    Column {
+                        Text(
+                            song.title,
+                            fontSize = 18.sp,
+                            lineHeight = 20.sp,
+                            fontWeight = FontWeight.W500,
+                            modifier = Modifier
+                                .basicMarquee()
+                        )
+                        Text(
+                            song.artist,
+                            fontSize = 14.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.W400,
+                            modifier = Modifier
+                                .basicMarquee()
+                        )
+                    }
+                }
+
+            }
+        }
+
+
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
